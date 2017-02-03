@@ -66,7 +66,7 @@ model.update()
 for a in range(A):
     #Equations 18,19
     model.addConstr(K[a]*z[a][a] >= D_down[a])
-    model.addConstr(K[a]*x[a]*w[a] >= D_up[a])
+    model.addConstr(K[a]*v[a][a] >= D_up[a])
     #Equations 20,21
     model.addConstr(N*beta*y[a] + quicksum(lalpha[a][aprime]*beta*z[a][aprime] for aprime in range(0,a)) + 
                     quicksum(lalpha[a][aprime]*beta*z[a][aprime] for aprime in range(a+1,A)) <= dalpha[a][a])
