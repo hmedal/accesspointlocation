@@ -5,6 +5,7 @@
 
 from gurobipy import *
 import numpy as np
+import csv
 
 
 # In[14]:
@@ -23,7 +24,15 @@ w = {}
 v = {}
 z = {}
 
-D_down = [100.0,100.0]
+D_down = []
+with open("../dat/source_demand.csv") as csvfile:
+    line = csv.reader(csvfile, delimiter=',')
+    for row in line:
+        D_down.append(float(row[1]))
+print(D_down)
+
+
+#THIS CODE WILL NOT WORK UNTIL ALL INDECES MATCH
 D_up = [50.0,50.0]
 K = [30.0,30.0]
 
