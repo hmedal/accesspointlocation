@@ -25,15 +25,20 @@ v = {}
 z = {}
 
 D_down = []
+D_up = []
 with open("../dat/source_demand.csv") as csvfile:
     line = csv.reader(csvfile, delimiter=',')
     for row in line:
         D_down.append(float(row[1]))
 print(D_down)
 
+with open("../dat/access_data.csv") as csvfile:
+    line = csv.reader(csvfile, delimiter=',')
+    for row in line:
+        D_up.append((row[0],row[1],float(row[2])))
+print(D_up[0][0])
 
-#THIS CODE WILL NOT WORK UNTIL ALL INDECES MATCH
-D_up = [50.0,50.0]
+#THIS CODE DOES NOT YET PROVIDE A CORRECT SOLUTION TO ANYTHING, IT ONLY WORKS
 K = [30.0,30.0]
 
 l = [[25.0,25.0],[25.0,25.0]]
@@ -75,7 +80,7 @@ model.update()
 for a in range(A):
     #Equations 18,19
     model.addConstr(K[a]*z[a][a] >= D_down[a])
-    model.addConstr(K[a]*v[a][a] >= D_up[a])
+    model.addConstr(K[a]*v[a][a] >= D_up[a][2])
     #Equations 20,21
     model.addConstr(N*beta*y[a] + quicksum(lalpha[a][aprime]*beta*z[a][aprime] for aprime in range(0,a)) + 
                     quicksum(lalpha[a][aprime]*beta*z[a][aprime] for aprime in range(a+1,A)) <= dalpha[a][a])
