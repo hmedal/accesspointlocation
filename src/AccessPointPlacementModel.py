@@ -1,62 +1,58 @@
-
-# coding: utf-8
-
-# In[1]:
-
 from gurobipy import *
 import numpy as np
 import csv
-
-
-# In[14]:
-
-model = Model("Coarse Model Linearized")
 
 A = 2
 N = 12.0
 Q = 1
 alpha = 2.0
 beta = 5.0
-
 x = {}
 y = {}
 w = {}
 v = {}
 z = {}
-
 D_down = []
 D_up = []
+min_dist = []
+max_dist = []
+avg_dist = []
+lalpha = [[0 for i in range(A)] for j in range(A)]
+Lalpha = [[0 for i in range(A)] for j in range(A)]
+dalpha = [[0 for i in range(A)] for j in range(A)]
+K = [30.0,30.0]
+
 with open("../dat/source_demand.csv") as csvfile:
     line = csv.reader(csvfile, delimiter=',')
     for row in line:
         D_down.append(float(row[1]))
 print(D_down)
-
 with open("../dat/access_data.csv") as csvfile:
     line = csv.reader(csvfile, delimiter=',')
     for row in line:
         D_up.append((row[0],row[1],float(row[2])))
-print(D_up[0][0])
+with open("../dat/distances.csv") as csvfile:
+    line = csv.reader(csvfile, delimiter=',')
+    for row in line:
+        min_dist.append((row[0],row[1],float(row[3])))
+        max_dist.append((row[0],row[1],float(row[4])))
+        avg_dist.append((row[0],row[1],float(row[2])))
 
 #THIS CODE DOES NOT YET PROVIDE A CORRECT SOLUTION TO ANYTHING, IT ONLY WORKS
-K = [30.0,30.0]
-
-l = [[25.0,25.0],[25.0,25.0]]
-L = [[25.0,25.0],[25.0,25.0]]
-d = [[25.0,25.0],[25.0,25.0]]
-lalpha = [[0.0,0.0],[0.0,0.0]]
-Lalpha = [[0.0,0.0],[0.0,0.0]]
-dalpha = [[0.0,0.0],[0.0,0.0]]
 
 #Calculate d_ij^-alpha, l_ij^-alpha, L_ij^-alpha since Gurobi won't allow this directly
-for i in range(2):
-    for j in range(2):
-        lalpha[i][j] = np.power(l[i][j],-alpha)
-        Lalpha[i][j] = np.power(L[i][j],-alpha)
-        if i == j:
-            dalpha[i][j] = 0.0
+for i in range(len(min_dist)):
+    for j in range(len(min_dist)):
+        if max_dist[i][0] == max_dist[i][1] or min_dist[i][0] == min_dist[i][1] or avg_dist[i][0] == avg_dist[i][1]:
+            dalpha[i][j] = (max_dist[i][0],max_dist[i][1],0.0)
+            lalpha[i][j] = (min_dist[i][0],min_dist[i][1],0.0)
+            Lalpha[i][j] = (avg_dist[i][0],avg_dist[i][1],0.0)
         else:
-            dalpha[i][j] = np.power(d[i][j],-alpha)
+            dalpha[i][j] = (max_dist[i][0],max_dist[i][1],np.power(max_dist[i][2],-alpha))
+            lalpha[i][j] = (min_dist[i][0],min_dist[i][1],np.power(min_dist[i][2],-alpha))
+            Lalpha[i][j] = (avg_dist[i][0],avg_dist[i][1],np.power(avg_dist[i][2],-alpha))
+
+model = Model("Coarse Model Linearized")
 
 #Create the variables
 for a in range(A):
@@ -68,12 +64,10 @@ for a in range(A):
     for aprime in range(A):
         v[a][aprime] = model.addVar(vtype=GRB.INTEGER, lb = 0, name="v"+str(a)+str(aprime))
         z[a][aprime] = model.addVar(vtype=GRB.INTEGER, lb = 0, name="z"+str(a)+str(aprime))
-    
 model.update()
 
 #Define the objective function
 model.setObjective(quicksum(x[a] for a in range(A)), GRB.MINIMIZE)
-
 model.update()
 
 #Set the constraints
@@ -82,10 +76,10 @@ for a in range(A):
     model.addConstr(K[a]*z[a][a] >= D_down[a])
     model.addConstr(K[a]*v[a][a] >= D_up[a][2])
     #Equations 20,21
-    model.addConstr(N*beta*y[a] + quicksum(lalpha[a][aprime]*beta*z[a][aprime] for aprime in range(0,a)) + 
-                    quicksum(lalpha[a][aprime]*beta*z[a][aprime] for aprime in range(a+1,A)) <= dalpha[a][a])
-    model.addConstr(N*beta*w[a] + quicksum(Lalpha[a][aprime]*beta*v[a][aprime] for aprime in range(0,a)) + 
-                    quicksum(Lalpha[a][aprime]*beta*v[a][aprime] for aprime in range(a+1,A)) <= dalpha[a][a])
+    model.addConstr(N*beta*y[a] + quicksum(lalpha[a][aprime][2]*beta*z[a][aprime] for aprime in range(0,a)) +
+                    quicksum(lalpha[a][aprime][2]*beta*z[a][aprime] for aprime in range(a+1,A)) <= dalpha[a][aprime][2])
+    model.addConstr(N*beta*w[a] + quicksum(Lalpha[a][aprime][2]*beta*v[a][aprime] for aprime in range(0,a)) +
+                    quicksum(Lalpha[a][aprime][2]*beta*v[a][aprime] for aprime in range(a+1,A)) <= dalpha[a][aprime][2])
     #Equations 22-29; Equations 25 and 29 are handled by the lower bound of the variables
     for aprime in range(A):
         if aprime != a:
@@ -95,12 +89,7 @@ for a in range(A):
             model.addConstr(v[a][aprime] <= x[aprime])
             model.addConstr(v[a][aprime] <= y[a])
             model.addConstr(v[a][aprime] >= x[aprime] - (1.0 - w[a])*Q)
-        
 model.update()
-
-
-# In[15]:
-
 model.optimize()
 
 
