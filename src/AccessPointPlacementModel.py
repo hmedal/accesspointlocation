@@ -25,7 +25,7 @@ K = [30.0,30.0]
 with open("../dat/source_demand.csv") as csvfile:
     line = csv.reader(csvfile, delimiter=',')
     for row in line:
-        D_down.append(float(row[1]))
+        D_down.append((row[0],float(row[1])))
 print(D_down)
 with open("../dat/access_data.csv") as csvfile:
     line = csv.reader(csvfile, delimiter=',')
@@ -73,7 +73,7 @@ model.update()
 #Set the constraints
 for a in range(A):
     #Equations 18,19
-    model.addConstr(K[a]*z[a][a] >= D_down[a])
+    model.addConstr(K[a]*z[a][a] >= D_down[a][1])
     model.addConstr(K[a]*v[a][a] >= D_up[a][2])
     #Equations 20,21
     model.addConstr(N*beta*y[a] + quicksum(lalpha[a][aprime][2]*beta*z[a][aprime] for aprime in range(0,a)) +
