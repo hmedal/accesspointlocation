@@ -17,16 +17,17 @@ D_up = []
 min_dist = []
 max_dist = []
 avg_dist = []
+med_dist = []
 lalpha = [[0 for i in range(A)] for j in range(A)]
 Lalpha = [[0 for i in range(A)] for j in range(A)]
-dalpha = [[0 for i in range(A)] for j in range(A)]
+dpalpha = [[0 for i in range(A)] for j in range(A)]
+dalpha = [0 for i in range(A)]
 K = [30.0,30.0]
 
 with open("../dat/source_demand.csv") as csvfile:
     line = csv.reader(csvfile, delimiter=',')
     for row in line:
         D_down.append((row[0],float(row[1])))
-print(D_down)
 with open("../dat/access_data.csv") as csvfile:
     line = csv.reader(csvfile, delimiter=',')
     for row in line:
@@ -45,9 +46,9 @@ with open("../dat/clients.csv") as csvfile:
 #THIS CODE DOES NOT YET PROVIDE A CORRECT SOLUTION TO ANYTHING, IT ONLY WORKS
 
 #Calculate d_ij^-alpha, l_ij^-alpha, L_ij^-alpha since Gurobi won't allow this directly
-for i in range(len(min_dist)):
-    for j in range(len(min_dist)):
-        if max_dist[i][0] == max_dist[i][1] or min_dist[i][0] == min_dist[i][1] or med_dist[i][0] == med_dist[i][1] or avg_dist[i][0] == avg_dist[i][1]:
+for i in range(A):
+    for j in range(A):
+        if max_dist[i][2] == 0 or min_dist[i][2] == 0 or med_dist[i][2] == 0:
             dpalpha[i][j] = (max_dist[i][0],max_dist[i][1],0.0)
             lalpha[i][j] = (min_dist[i][0],min_dist[i][1],0.0)
             Lalpha[i][j] = (med_dist[i][0],med_dist[i][1],0.0)
@@ -55,7 +56,7 @@ for i in range(len(min_dist)):
             dpalpha[i][j] = (max_dist[i][0],max_dist[i][1],np.power(max_dist[i][2],-alpha))
             lalpha[i][j] = (min_dist[i][0],min_dist[i][1],np.power(min_dist[i][2],-alpha))
             Lalpha[i][j] = (med_dist[i][0],med_dist[i][1],np.power(med_dist[i][2],-alpha))
-for i in range(avg_dist):
+for i in range(A):
     dalpha[i] = (avg_dist[i][0],np.power(avg_dist[i][1],-alpha))
 
 model = Model("Coarse Model Linearized")
@@ -97,9 +98,3 @@ for a in range(A):
             model.addConstr(v[a][aprime] >= x[aprime] - (1.0 - w[a])*Q)
 model.update()
 model.optimize()
-
-
-# In[ ]:
-
-
-
