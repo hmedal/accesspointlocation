@@ -36,21 +36,27 @@ with open("../dat/distances.csv") as csvfile:
     for row in line:
         min_dist.append((row[0],row[1],float(row[3])))
         max_dist.append((row[0],row[1],float(row[4])))
-        avg_dist.append((row[0],row[1],float(row[2])))
+        med_dist.append((row[0],row[1],float(row[2])))
+with open("../dat/clients.csv") as csvfile:
+    line = csv.reader(csvfile, delimiter=',')
+    for row in line:
+        avg_dist.append((row[0],float(row[1])))
 
 #THIS CODE DOES NOT YET PROVIDE A CORRECT SOLUTION TO ANYTHING, IT ONLY WORKS
 
 #Calculate d_ij^-alpha, l_ij^-alpha, L_ij^-alpha since Gurobi won't allow this directly
 for i in range(len(min_dist)):
     for j in range(len(min_dist)):
-        if max_dist[i][0] == max_dist[i][1] or min_dist[i][0] == min_dist[i][1] or avg_dist[i][0] == avg_dist[i][1]:
-            dalpha[i][j] = (max_dist[i][0],max_dist[i][1],0.0)
+        if max_dist[i][0] == max_dist[i][1] or min_dist[i][0] == min_dist[i][1] or med_dist[i][0] == med_dist[i][1] or avg_dist[i][0] == avg_dist[i][1]:
+            dpalpha[i][j] = (max_dist[i][0],max_dist[i][1],0.0)
             lalpha[i][j] = (min_dist[i][0],min_dist[i][1],0.0)
-            Lalpha[i][j] = (avg_dist[i][0],avg_dist[i][1],0.0)
+            Lalpha[i][j] = (med_dist[i][0],med_dist[i][1],0.0)
         else:
-            dalpha[i][j] = (max_dist[i][0],max_dist[i][1],np.power(max_dist[i][2],-alpha))
+            dpalpha[i][j] = (max_dist[i][0],max_dist[i][1],np.power(max_dist[i][2],-alpha))
             lalpha[i][j] = (min_dist[i][0],min_dist[i][1],np.power(min_dist[i][2],-alpha))
-            Lalpha[i][j] = (avg_dist[i][0],avg_dist[i][1],np.power(avg_dist[i][2],-alpha))
+            Lalpha[i][j] = (med_dist[i][0],med_dist[i][1],np.power(med_dist[i][2],-alpha))
+for i in range(avg_dist):
+    dalpha[i] = (avg_dist[i][0],np.power(avg_dist[i][1],-alpha))
 
 model = Model("Coarse Model Linearized")
 
@@ -77,9 +83,9 @@ for a in range(A):
     model.addConstr(K[a]*v[a][a] >= D_up[a][2])
     #Equations 20,21
     model.addConstr(N*beta*y[a] + quicksum(lalpha[a][aprime][2]*beta*z[a][aprime] for aprime in range(0,a)) +
-                    quicksum(lalpha[a][aprime][2]*beta*z[a][aprime] for aprime in range(a+1,A)) <= dalpha[a][aprime][2])
+                    quicksum(lalpha[a][aprime][2]*beta*z[a][aprime] for aprime in range(a+1,A)) <= dalpha[a][1])
     model.addConstr(N*beta*w[a] + quicksum(Lalpha[a][aprime][2]*beta*v[a][aprime] for aprime in range(0,a)) +
-                    quicksum(Lalpha[a][aprime][2]*beta*v[a][aprime] for aprime in range(a+1,A)) <= dalpha[a][aprime][2])
+                    quicksum(Lalpha[a][aprime][2]*beta*v[a][aprime] for aprime in range(a+1,A)) <= dalpha[a][1])
     #Equations 22-29; Equations 25 and 29 are handled by the lower bound of the variables
     for aprime in range(A):
         if aprime != a:
