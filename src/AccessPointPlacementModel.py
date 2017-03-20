@@ -2,11 +2,11 @@ from gurobipy import *
 import numpy as np
 import csv
 
-A = 2
-N = 12.0
-Q = 1
+A = 12
+N = 0.0000517
+Q = 3
 alpha = 2.0
-beta = 5.0
+beta = 0.0000631
 x = {}
 y = {}
 w = {}
@@ -22,7 +22,7 @@ lalpha = [[0 for i in range(A)] for j in range(A)]
 Lalpha = [[0 for i in range(A)] for j in range(A)]
 dpalpha = [[0 for i in range(A)] for j in range(A)]
 dalpha = [0 for i in range(A)]
-K = [30.0,30.0]
+K = [30.0,30.0,20.0,20.0,60.0,60.0,100.0,100.0,50.0,50.0,15.0,15.0]
 
 with open("../dat/source_demand.csv") as csvfile:
     line = csv.reader(csvfile, delimiter=',')
@@ -98,3 +98,5 @@ for a in range(A):
             model.addConstr(v[a][aprime] >= x[aprime] - (1.0 - w[a])*Q)
 model.update()
 model.optimize()
+for a in range(A):
+    print(a, x[a].X)
